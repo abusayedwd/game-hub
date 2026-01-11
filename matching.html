@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Memory Match Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+
+  :root {
+    --bg-primary: #0a0e27;
+    --bg-secondary: #151937;
+    --card-bg: #1a1f3a;
+    --accent-cyan: #00d9ff;
+    --accent-purple: #a855f7;
+    --accent-pink: #ec4899;
+    --success: #10b981;
+    --danger: #ef4444;
+    --gold: #fbbf24;
+  }
+
+  * { 
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    font-family: 'Poppins', sans-serif;
+    color: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(168, 85, 247, 0.15), transparent 40%),
+      radial-gradient(circle at 80% 20%, rgba(0, 217, 255, 0.15), transparent 40%);
+    animation: gradientShift 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 3s infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 {
+    text-align: center;
+    margin: 0 0 20px 0;
+    font-size: 2.5em;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink));
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientFlow 4s ease infinite;
+    text-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+    letter-spacing: 2px;
+  }
+
+  @keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .difficulty-btn {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+    background: rgba(26, 31, 58, 0.6);
+    color: #94a3b8;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+
+  .difficulty-btn:hover {
+    border-color: var(--accent-purple);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .difficulty-btn.active {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    border-color: var(--accent-purple);
+    color: white;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: rgba(26, 31, 58, 0.6);
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid rgba(0, 217, 255, 0.2);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: #64748b;
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .board {
+    display: grid;
+    gap: 12px;
+    margin-top: 15px;
+    perspective: 1000px;
+  }
+
+  .board.easy { grid-template-columns: repeat(4, 1fr); }
+  .board.medium { grid-template-columns: repeat(4, 1fr); }
+  .board.hard { grid-template-columns: repeat(5, 1fr); }
+
+  .card {
+    aspect-ratio: 1 / 1;
+    perspective: 1000px;
+  }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+    cursor: pointer;
+  }
+
+  .card.flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    border-radius: 16px;
+    backface-visibility: hidden;
+  }
+
+  .front {
+    background: linear-gradient(145deg, rgba(26, 31, 58, 0.9), rgba(21, 25, 55, 0.9));
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .front::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 2px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .front::after {
+    content: '?';
+    font-size: 40px;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    opacity: 0.7;
+  }
+
+  .back {
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.15), rgba(168, 85, 247, 0.15));
+    border: 2px solid rgba(168, 85, 247, 0.4);
+    transform: rotateY(180deg);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+  }
+
+  .card.matched .card-inner {
+    animation: matchPulse 0.6s ease;
+  }
+
+  .card.matched .back {
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.3), rgba(6, 182, 212, 0.3));
+    border-color: var(--success);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+  }
+
+  @keyframes matchPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .card.wrong .card-inner {
+    animation: wrongShake 0.5s ease;
+  }
+
+  @keyframes wrongShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 39, 0.95);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    z-index: 100;
+  }
+
+  .overlay h2 {
+    font-size: 3.5em;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--gold), var(--accent-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: celebrate 1s ease;
+  }
+
+  @keyframes celebrate {
+    0% { transform: scale(0) rotate(-180deg); }
+    50% { transform: scale(1.2) rotate(10deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+    max-width: 300px;
+  }
+
+  .summary-item {
+    background: rgba(26, 31, 58, 0.8);
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+  }
+
+  .summary-label {
+    font-size: 12px;
+    color: #64748b;
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .summary-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+  }
+
+  .stars-earned {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+    font-size: 40px;
+  }
+
+  .star-icon {
+    animation: starPop 0.5s ease forwards;
+  }
+
+  .star-icon:nth-child(2) { animation-delay: 0.2s; }
+  .star-icon:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes starPop {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(10deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  button {
+    margin-top: 15px;
+    padding: 15px 40px;
+    border-radius: 12px;
+    border: 2px solid var(--accent-purple);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+    transition: all 0.3s ease;
+  }
+
+  button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.8);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    font-size: 20px;
+    animation: particleFloat 2s ease-out forwards;
+    z-index: 1000;
+  }
+
+  @keyframes particleFloat {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-200px) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  .combo-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 60px;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 30px var(--gold);
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    animation: comboShow 1s ease;
+  }
+
+  @keyframes comboShow {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="app">
+  <h1>🧠 MEMORY MASTER</h1>
+ <button onclick="goHome()">🏠 Back</button>
+  <div class="controls">
+    <button class="difficulty-btn active" data-level="easy">Easy (4×4)</button>
+    <button class="difficulty-btn" data-level="medium">Medium (4×5)</button>
+    <button class="difficulty-btn" data-level="hard">Hard (5×6)</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <span class="stat-label">⏱ Time</span>
+      <div class="stat-value" id="time">0</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">🎯 Moves</span>
+      <div class="stat-value" id="moves">0</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">🔥 Streak</span>
+      <div class="stat-value" id="streak">0</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">🏆 Best</span>
+      <div class="stat-value" id="best">—</div>
+    </div>
+  </div>
+
+  <div class="board easy" id="board"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <h2>🎉 VICTORY!</h2>
+  <div class="stars-earned" id="starsEarned"></div>
+  <div class="summary-grid">
+    <div class="summary-item">
+      <span class="summary-label">Time</span>
+      <div class="summary-value" id="finalTime">0s</div>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Moves</span>
+      <div class="summary-value" id="finalMoves">0</div>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Accuracy</span>
+      <div class="summary-value" id="accuracy">100%</div>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Best Streak</span>
+      <div class="summary-value" id="maxStreak">0</div>
+    </div>
+  </div>
+  <button onclick="startGame()">PLAY AGAIN</button>
+</div>
+
+<script>
+  const easyIcons = ["🍎","🍌","🍇","🍉","🍓","🍍","🥝","🍒"];
+  const mediumIcons = ["🍎","🍌","🍇","🍉","🍓","🍍","🥝","🍒","🥥","🍑"];
+  const hardIcons = ["🍎","🍌","🍇","🍉","🍓","🍍","🥝","🍒","🥥","🍑","🥭","🍊","🍋","🥗","🌽"];
+    function goHome() {
+    window.location.href = "index.html";
+  }
+  
+  const board = document.getElementById("board");
+  const movesEl = document.getElementById("moves");
+  const timeEl = document.getElementById("time");
+  const streakEl = document.getElementById("streak");
+  const bestEl = document.getElementById("best");
+  const overlay = document.getElementById("overlay");
+  const starsContainer = document.getElementById("stars");
+
+  let cards, flipped = [], moves = 0, matched = 0;
+  let timer, time = 0;
+  let streak = 0, maxStreak = 0;
+  let difficulty = 'easy';
+  let totalPairs = 0;
+
+  // Create starfield
+  for (let i = 0; i < 100; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    starsContainer.appendChild(star);
+  }
+
+  // Difficulty selection
+  document.querySelectorAll('.difficulty-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      difficulty = btn.dataset.level;
+      board.className = `board ${difficulty}`;
+      startGame();
+    };
+  });
+
+  function shuffle(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+  }
+
+  function getBestScore() {
+    const key = `matchBest_${difficulty}`;
+    return localStorage.getItem(key) || null;
+  }
+
+  function setBestScore(score) {
+    const key = `matchBest_${difficulty}`;
+    const current = getBestScore();
+    if (!current || score < parseInt(current)) {
+      localStorage.setItem(key, score);
+      return true;
+    }
+    return false;
+  }
+
+  function createParticles(x, y, emoji) {
+    for (let i = 0; i < 6; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.textContent = emoji;
+      particle.style.left = x + 'px';
+      particle.style.top = y + 'px';
+      particle.style.animationDelay = i * 0.1 + 's';
+      document.body.appendChild(particle);
+      setTimeout(() => particle.remove(), 2000);
+    }
+  }
+
+  function showCombo(text) {
+    const combo = document.createElement('div');
+    combo.className = 'combo-indicator';
+    combo.textContent = text;
+    document.body.appendChild(combo);
+    setTimeout(() => combo.remove(), 1000);
+  }
+
+  function startGame() {
+    board.innerHTML = "";
+    overlay.style.display = "none";
+    flipped = [];
+    moves = 0;
+    matched = 0;
+    streak = 0;
+    maxStreak = 0;
+    time = 0;
+    movesEl.textContent = "0";
+    streakEl.textContent = "0";
+    timeEl.textContent = "0";
+    
+    const best = getBestScore();
+    bestEl.textContent = best || "—";
+    
+    clearInterval(timer);
+
+    timer = setInterval(() => {
+      time++;
+      timeEl.textContent = time;
+    }, 1000);
+
+    let icons;
+    if (difficulty === 'easy') {
+      icons = easyIcons;
+      totalPairs = 8;
+    } else if (difficulty === 'medium') {
+      icons = mediumIcons;
+      totalPairs = 10;
+    } else {
+      icons = hardIcons;
+      totalPairs = 15;
+    }
+
+    cards = shuffle([...icons.slice(0, totalPairs), ...icons.slice(0, totalPairs)]);
+
+    cards.forEach(icon => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="card-face front"></div>
+          <div class="card-face back">${icon}</div>
+        </div>
+      `;
+      card.onclick = () => flip(card, icon);
+      board.appendChild(card);
+    });
+  }
+
+  function flip(card, icon) {
+    if (
+      card.classList.contains("flipped") ||
+      card.classList.contains("matched") ||
+      flipped.length === 2
+    ) return;
+
+    card.classList.add("flipped");
+    flipped.push({ card, icon });
+
+    if (flipped.length === 2) {
+      moves++;
+      movesEl.textContent = moves;
+
+      if (flipped[0].icon === flipped[1].icon) {
+        // Match found
+        flipped.forEach(f => {
+          f.card.classList.add("matched");
+          const rect = f.card.getBoundingClientRect();
+          createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, icon);
+        });
+        
+        matched += 2;
+        streak++;
+        maxStreak = Math.max(maxStreak, streak);
+        streakEl.textContent = streak;
+        
+        if (streak >= 3) {
+          showCombo(`🔥 STREAK x${streak}!`);
+        }
+        
+        flipped = [];
+
+        if (matched === cards.length) win();
+      } else {
+        // No match
+        streak = 0;
+        streakEl.textContent = streak;
+        
+        setTimeout(() => {
+          flipped.forEach(f => {
+            f.card.classList.add("wrong");
+            f.card.classList.remove("flipped");
+          });
+          setTimeout(() => {
+            flipped.forEach(f => f.card.classList.remove("wrong"));
+          }, 500);
+          flipped = [];
+        }, 800);
+      }
+    }
+  }
+
+  function win() {
+    clearInterval(timer);
+    
+    const accuracy = Math.round((totalPairs / moves) * 100);
+    const stars = accuracy >= 90 ? 3 : accuracy >= 70 ? 2 : 1;
+    
+    document.getElementById('finalTime').textContent = time + 's';
+    document.getElementById('finalMoves').textContent = moves;
+    document.getElementById('accuracy').textContent = accuracy + '%';
+    document.getElementById('maxStreak').textContent = maxStreak;
+    
+    const starsEarned = document.getElementById('starsEarned');
+    starsEarned.innerHTML = '';
+    for (let i = 0; i < stars; i++) {
+      const star = document.createElement('span');
+      star.className = 'star-icon';
+      star.textContent = '⭐';
+      starsEarned.appendChild(star);
+    }
+    
+    const isNewBest = setBestScore(moves);
+    if (isNewBest) {
+      bestEl.textContent = moves;
+    }
+    
+    setTimeout(() => {
+      overlay.style.display = "flex";
+    }, 500);
+  }
+
+  startGame();
+</script>
+
+</body>
+</html>

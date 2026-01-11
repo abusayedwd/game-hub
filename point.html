@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cosmic Dodge Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      color: white;
+      font-family: 'Orbitron', Arial, sans-serif;
+      text-align: center;
+      user-select: none;
+      touch-action: none;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.1), transparent 50%);
+      animation: pulse 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    h1 { 
+      margin: 20px;
+      font-size: 2.5em;
+      font-weight: 900;
+      background: linear-gradient(45deg, #06b6d4, #8b5cf6, #ec4899);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradient 3s ease infinite;
+      text-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+    }
+
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    #game-container {
+      position: relative;
+      width: 90vw;
+      max-width: 450px;
+      margin: auto;
+    }
+
+    #game {
+      width: 100%;
+      height: 70vh;
+      max-height: 650px;
+      border: 3px solid transparent;
+      background: linear-gradient(#0f172a, #0f172a) padding-box,
+                  linear-gradient(45deg, #06b6d4, #8b5cf6, #ec4899) border-box;
+      margin: auto;
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      box-shadow: 0 0 60px rgba(139, 92, 246, 0.4),
+                  inset 0 0 60px rgba(6, 182, 212, 0.1);
+    }
+
+    #game::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(6, 182, 212, 0.03) 2px, rgba(6, 182, 212, 0.03) 4px);
+      pointer-events: none;
+    }
+
+    #player {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 12px;
+      box-shadow: 0 0 30px #10b981, 0 5px 15px rgba(16, 185, 129, 0.5);
+      border: 2px solid #34d399;
+      transition: transform 0.1s ease;
+    }
+
+    #player::after {
+      content: '🚀';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .enemy {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      position: absolute;
+      top: -60px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px #ef4444, 0 5px 15px rgba(239, 68, 68, 0.5);
+      border: 2px solid #f87171;
+      animation: enemyRotate 2s linear infinite;
+    }
+
+    .enemy::after {
+      content: '💀';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    @keyframes enemyRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .bonus {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      position: absolute;
+      top: -60px;
+      border-radius: 50%;
+      box-shadow: 0 0 30px #fbbf24, 0 5px 15px rgba(251, 191, 36, 0.5);
+      border: 2px solid #fcd34d;
+      animation: bonusSpin 1s linear infinite;
+    }
+
+    .bonus::after {
+      content: '⭐';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    @keyframes bonusSpin {
+      from { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.2); }
+      to { transform: rotate(360deg) scale(1); }
+    }
+
+    #info {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+      font-size: 18px;
+      font-weight: 700;
+      gap: 20px;
+    }
+
+    .stat {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 12px 20px;
+      border-radius: 12px;
+      border: 2px solid rgba(139, 92, 246, 0.3);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      flex: 1;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      background: linear-gradient(45deg, #06b6d4, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      display: none;
+      z-index: 10;
+    }
+
+    #overlay h2 {
+      font-size: 3em;
+      margin-bottom: 20px;
+      background: linear-gradient(45deg, #ef4444, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    #final-score {
+      font-size: 1.5em;
+      margin: 10px 0;
+      color: #94a3b8;
+    }
+
+    button {
+      padding: 15px 40px;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      border: 2px solid #a78bfa;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'Orbitron', Arial, sans-serif;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 20px;
+      color: white;
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 40px rgba(139, 92, 246, 0.8);
+      background: linear-gradient(135deg, #a78bfa, #818cf8);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #fbbf24;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: particleFall 1s linear forwards;
+    }
+
+    @keyframes particleFall {
+      to {
+        transform: translateY(100px) scale(0);
+        opacity: 0;
+      }
+    }
+
+    #combo {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 14px;
+      background: rgba(251, 191, 36, 0.2);
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 2px solid #fbbf24;
+      display: none;
+      animation: comboPopIn 0.3s ease;
+    }
+      button {
+    margin-top: 15px;
+    padding: 15px 40px;
+    border-radius: 12px;
+    border: 2px solid var(--accent-purple);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+    transition: all 0.3s ease;
+  }
+
+    @keyframes comboPopIn {
+      from { transform: scale(0); }
+      to { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+<button onclick="goHome()">🏠 Back</button>
+<h1>🚀 COSMIC DODGE</h1>
+
+<div id="game-container">
+  <div id="info">
+    <div class="stat">
+      <span class="stat-label">SCORE</span>
+      <div class="stat-value" id="score">0</div>
+    </div>
+    <div class="stat">
+      <span class="stat-label">BEST</span>
+      <div class="stat-value" id="high">0</div>
+    </div>
+    <div class="stat">
+      <span class="stat-label">LEVEL</span>
+      <div class="stat-value" id="level">1</div>
+    </div>
+  </div>
+
+  <div id="game">
+    <div id="player"></div>
+    <div id="combo"></div>
+    <div id="overlay">
+      <h2>GAME OVER</h2>
+      <div id="final-score">Final Score: 0</div>
+      <button onclick="startGame()">PLAY AGAIN</button>
+    </div>
+  </div>
+</div>
+
+<script>
+      function goHome() {
+    window.location.href = "index.html";
+  }
+  const game = document.getElementById("game");
+  const player = document.getElementById("player");
+  const scoreEl = document.getElementById("score");
+  const highEl = document.getElementById("high");
+  const levelEl = document.getElementById("level");
+  const overlay = document.getElementById("overlay");
+  const finalScoreEl = document.getElementById("final-score");
+  const comboEl = document.getElementById("combo");
+
+  let gameWidth, playerX;
+  let enemies = [];
+  let bonuses = [];
+  let score = 0;
+  let level = 1;
+  let speed = 3;
+  let running = false;
+  let combo = 0;
+  let comboTimer = null;
+  let highScore = 0;
+
+  highEl.innerText = highScore;
+
+  function updateSizes() {
+    gameWidth = game.clientWidth;
+  }
+  window.addEventListener("resize", updateSizes);
+  updateSizes();
+
+  // KEYBOARD CONTROL
+  document.addEventListener("keydown", e => {
+    if (!running) return;
+    if (e.key === "ArrowLeft") movePlayer(-30);
+    if (e.key === "ArrowRight") movePlayer(30);
+  });
+
+  // MOUSE CONTROL
+  game.addEventListener("mousemove", e => {
+    if (!running) return;
+    const rect = game.getBoundingClientRect();
+    playerX = e.clientX - rect.left - 25;
+    clampPlayer();
+  });
+
+  // TOUCH CONTROL
+  game.addEventListener("touchmove", e => {
+    if (!running) return;
+    const rect = game.getBoundingClientRect();
+    playerX = e.touches[0].clientX - rect.left - 25;
+    clampPlayer();
+  });
+
+  function movePlayer(dx) {
+    playerX += dx;
+    clampPlayer();
+  }
+
+  function clampPlayer() {
+    playerX = Math.max(0, Math.min(gameWidth - 50, playerX));
+    player.style.left = playerX + "px";
+  }
+
+  function createEnemy() {
+    const enemy = document.createElement("div");
+    enemy.className = "enemy";
+    enemy.style.left = Math.random() * (gameWidth - 50) + "px";
+    enemy.style.top = "-60px";
+    game.appendChild(enemy);
+    enemies.push(enemy);
+  }
+
+  function createBonus() {
+    const bonus = document.createElement("div");
+    bonus.className = "bonus";
+    bonus.style.left = Math.random() * (gameWidth - 40) + "px";
+    bonus.style.top = "-60px";
+    game.appendChild(bonus);
+    bonuses.push(bonus);
+  }
+
+  function createParticles(x, y) {
+    for (let i = 0; i < 10; i++) {
+      const particle = document.createElement("div");
+      particle.className = "particle";
+      particle.style.left = x + "px";
+      particle.style.top = y + "px";
+      particle.style.transform = `rotate(${Math.random() * 360}deg)`;
+      game.appendChild(particle);
+      setTimeout(() => particle.remove(), 1000);
+    }
+  }
+
+  function updateCombo() {
+    if (combo > 0) {
+      comboEl.textContent = `🔥 COMBO x${combo}`;
+      comboEl.style.display = 'block';
+    } else {
+      comboEl.style.display = 'none';
+    }
+  }
+
+  function resetCombo() {
+    combo = 0;
+    updateCombo();
+  }
+
+  function collision(a, b) {
+    const r1 = a.getBoundingClientRect();
+    const r2 = b.getBoundingClientRect();
+    return !(
+      r1.bottom < r2.top ||
+      r1.top > r2.bottom ||
+      r1.right < r2.left ||
+      r1.left > r2.right
+    );
+  }
+
+  function gameLoop() {
+    if (!running) return;
+
+    // Handle enemies
+    enemies.forEach((enemy, i) => {
+      enemy.style.top = enemy.offsetTop + speed + "px";
+
+      if (collision(player, enemy)) endGame();
+
+      if (enemy.offsetTop > game.clientHeight) {
+        enemy.remove();
+        enemies.splice(i, 1);
+        score++;
+        combo++;
+        scoreEl.innerText = score;
+        
+        // Update combo
+        clearTimeout(comboTimer);
+        updateCombo();
+        comboTimer = setTimeout(resetCombo, 2000);
+        
+        // Level up every 10 points
+        if (score % 10 === 0) {
+          level++;
+          levelEl.innerText = level;
+          speed += 0.5;
+        }
+      }
+    });
+
+    // Handle bonuses
+    bonuses.forEach((bonus, i) => {
+      bonus.style.top = bonus.offsetTop + speed * 0.8 + "px";
+
+      if (collision(player, bonus)) {
+        const bonusX = bonus.offsetLeft + 20;
+        const bonusY = bonus.offsetTop + 20;
+        createParticles(bonusX, bonusY);
+        
+        bonus.remove();
+        bonuses.splice(i, 1);
+        score += 5;
+        combo += 3;
+        scoreEl.innerText = score;
+        updateCombo();
+        
+        // Visual feedback
+        player.style.transform = 'translateX(-50%) scale(1.2)';
+        setTimeout(() => {
+          player.style.transform = 'translateX(-50%) scale(1)';
+        }, 200);
+      }
+
+      if (bonus.offsetTop > game.clientHeight) {
+        bonus.remove();
+        bonuses.splice(i, 1);
+      }
+    });
+
+    // Spawn enemies
+    if (Math.random() < 0.02 + level * 0.005) createEnemy();
+    
+    // Spawn bonuses (less frequent)
+    if (Math.random() < 0.008) createBonus();
+    
+    speed += 0.001;
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function startGame() {
+    enemies.forEach(e => e.remove());
+    bonuses.forEach(b => b.remove());
+    enemies = [];
+    bonuses = [];
+    score = 0;
+    level = 1;
+    speed = 3;
+    combo = 0;
+    playerX = gameWidth / 2 - 25;
+    scoreEl.innerText = "0";
+    levelEl.innerText = "1";
+    updateCombo();
+    overlay.style.display = "none";
+    running = true;
+    gameLoop();
+  }
+
+  function endGame() {
+    running = false;
+    overlay.style.display = "flex";
+    finalScoreEl.textContent = `Final Score: ${score}`;
+    
+    if (score > highScore) {
+      highScore = score;
+      highEl.innerText = highScore;
+    }
+  }
+
+  startGame();
+</script>
+
+</body>
+</html>
